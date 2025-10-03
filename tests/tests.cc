@@ -50,6 +50,16 @@ TEST_CASE("Example: Create a new account", "[ex-1]") {
   std::vector<std::string> empty;
   REQUIRE(transactions[{12345678, 1234}] == empty);
 }
+TEST_CASE("Example: Create account with existing pin", "[Duplicate Account]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 300.30);
+  auto accounts = atm.GetAccounts();
+  REQUIRE(accounts.contains({12345678, 1234}));
+  REQUIRE(accounts.size() == 1);
+  SECTION("Already existing account") {
+    REQUIRE_THROWS_AS(atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 300.30), std::invalid_argument);
+  }
+}
 
 TEST_CASE("Example: Simple widthdraw", "[ex-2]") {
   Atm atm;
@@ -61,6 +71,49 @@ TEST_CASE("Example: Simple widthdraw", "[ex-2]") {
   REQUIRE(sam_account.balance == 280.30);
 }
 
+TEST_CASE("Withdraw from non-existent", "[No account withdrawl]") {
+  Atm atm;
+  atm.RegisterAccount(99999999, 9898, "Sam Sepiol", 300.30);
+  SECTION("Non existent account"){
+    REQUIRE_THROWS_AS(atm.WithdrawCash(12345678, 1234, 20), std::invalid_argument);
+  }
+}
+TEST_CASE("Withdraw negative", "[Negative Withdrawl]") {
+  Atm atm;
+  atm.RegisterAccount(5678, 8448, "Sam Sepiol", 300.30);
+  SECTION("Non existent account"){
+    REQUIRE_THROWS_AS(atm.WithdrawCash(5678, 8448, -20), std::invalid_argument);
+  }
+}
+TEST_CASE("Deposit negative", "[Negative Deposit]") {
+  Atm atm;
+  atm.RegisterAccount(5678, 8448, "Sam Sepiol", 300.30);
+  SECTION("Non existent account"){
+    REQUIRE_THROWS_AS(atm.DepositCash(5678, 8448, -20), std::invalid_argument);
+  }
+}
+TEST_CASE("Deposit from non-existent", "[No account withdrawl]") {
+  Atm atm;
+  atm.RegisterAccount(99999999, 9898, "Sam Sepiol", 300.30);
+  SECTION("Non existent account"){
+    REQUIRE_THROWS_AS(atm.DepositCash(12345678, 1234, 20), std::invalid_argument);
+  }
+}
+TEST_CASE("Deposit transaction history", "[Deposit Transaction History]") {
+  Atm atm;
+  atm.RegisterAccount(5678, 8448, "Sam Sepiol", 40000.00);
+  auto& transactions = atm.GetTransactions();
+  transactions[{5678, 8448}].push_back("Deposit - Amount: $40000.00, Updated Balance: $40099.90");
+  atm.DepositCash(5678, 8448, 99.90);
+  auto& transaction_test = atm.GetTransactions();
+  REQUIRE(transaction_test[{5678, 8448}] == transactions[{5678, 8448}]);
+}
+TEST_CASE("Basic deposit", "[Basic Deposit]") {
+  Atm atm;
+  atm.RegisterAccount(5678, 8448, "Sam Sepiol", 40000.00);
+  atm.DepositCash(5678, 8448, 99.90);
+  REQUIRE(atm.CheckBalance(5678, 8448) == 40099.90);
+}
 TEST_CASE("Example: Print Prompt Ledger", "[ex-3]") {
   Atm atm;
   atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 300.30);
@@ -73,4 +126,9 @@ TEST_CASE("Example: Print Prompt Ledger", "[ex-3]") {
       "Deposit - Amount: $32000.00, Updated Balance: $72099.90");
   atm.PrintLedger("./prompt.txt", 12345678, 1234);
   REQUIRE(CompareFiles("./ex-1.txt", "./prompt.txt"));
+}
+TEST_CASE("Print Prompt Ledger nonexistent", "[Non-existent ledger]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 300.30);
+  REQUIRE_THROWS_AS(atm.PrintLedger("./prompt.txt", 12345678, 1234), std::invalid_argument);
 }
