@@ -84,6 +84,9 @@ TEST_CASE("Withdraw negative", "[Negative Withdrawl]") {
   SECTION("Non existent account"){
     REQUIRE_THROWS_AS(atm.WithdrawCash(5678, 8448, -20), std::invalid_argument);
   }
+  SECTION("Withdraw more than you have") {
+    REQUIRE_THROWS_AS(atm.WithdrawCash(5678, 8448, 330), std::runtime_error);
+  }
 }
 TEST_CASE("Deposit negative", "[Negative Deposit]") {
   Atm atm;
